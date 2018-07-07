@@ -1,4 +1,4 @@
-group 'org.openrndr.template'
+group 'net.4nomore.recaman'
 version '1.0-SNAPSHOT'
 
 buildscript {
@@ -56,7 +56,7 @@ compileTestKotlin {
     kotlinOptions.jvmTarget = "1.8"
 }
 
-mainClassName = "TemplateProgramKt"
+mainClassName = "RecamanKt"
 applicationDefaultJvmArgs = ["-XstartOnFirstThread"]
 
 ext.mainClassName = mainClassName
