@@ -11,7 +11,7 @@ fun toRad(deg: Double): Double {
 }
 
 class SemiCircle(val center: Vector2, val radius: Double, val startAngle: Double, val endAngle: Double) {
-    val nSteps = 100
+    val nSteps = 400
 
     fun draw(drawer: Drawer) {
         drawer.pushStyle()
