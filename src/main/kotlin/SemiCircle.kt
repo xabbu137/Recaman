@@ -1,27 +1,33 @@
 import org.openrndr.draw.Drawer
 import org.openrndr.math.Vector2
-import org.openrndr.math.min
-import java.util.*
 import kotlin.math.PI
-import kotlin.math.max
-import kotlin.math.min
+import kotlin.math.round
 
 fun toRad(deg: Double): Double {
     return deg/180* PI
 }
 
-class SemiCircle(val center: Vector2, val radius: Double, val startAngle: Double, val endAngle: Double) {
-    val nSteps = 400
+class SemiCircle(val center: Vector2, val radius: Double, val startAngle: Double, val endAngle: Double, val t: Int, val nSteps: Int, val reverse: Boolean) {
 
     fun draw(drawer: Drawer) {
         drawer.pushStyle()
         drawer.pushTransforms()
         drawer.translate(this.center)
-        val start = min(this.startAngle, this.endAngle)
-        val end = max(this.startAngle, this.endAngle)
+//        val start = min(this.startAngle, this.endAngle)
+//        val end = max(this.startAngle, this.endAngle)
+        var start: Double
+        var end: Double
+        if (reverse) {
+            start = this.endAngle
+            end = this.startAngle
+        } else {
+            start = this.startAngle
+            end = this.endAngle
+        }
         drawer.rotate(start)
-        val step = (end - start) / (nSteps+1)
-        for (i in 0..nSteps) {
+        val step = (end - start) / nSteps
+        val endStep = t
+        for (i in 0..t-1) {
             val angle = i * step
             val p0 = Vector2(Math.cos(toRad(angle)) * this.radius, Math.sin(toRad(angle)) * this.radius)
 //            drawer.circle(p0, 5.0)

@@ -39,6 +39,7 @@ switch (org.gradle.internal.os.OperatingSystem.current()) {
 }
 
 dependencies {
+    compile fileTree(dir: 'lib', include: '*.jar')
     compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
     testCompile group: 'junit', name: 'junit', version: '4.12'
     runtime "org.openrndr:openrndr-gl3:$openrndrVersion"
@@ -47,6 +48,7 @@ dependencies {
     compile "org.openrndr:openrndr-svg:$openrndrVersion"
     compile "org.openrndr:openrndr-animatable:$openrndrVersion"
     compile "org.openrndr:openrndr-extensions:$openrndrVersion"
+//    compile "org.openrndr:openrndr-ffmpeg:$openrndrVersion"
 }
 
 compileKotlin {
