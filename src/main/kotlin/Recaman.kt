@@ -1,7 +1,8 @@
 // Visualisation of the Recaman Series https://oeis.org/A005132
-// TODO: would be cool to have sound with that ... true piano sounds that is :-)
 // TODO: add animated dots when playing note / crossing 45deg line
-// TODO: check out drawer.contour( Circle(Vector2(100.0, 100.0), 100.0).contour.sub(0.0, 0.5) on http://guide.openrndr.org/#/Tutorial_DrawingComplexShapes
+// play piano note for new values
+// use drawer.contour( Circle(Vector2(100.0, 100.0), 100.0).contour.sub(0.0, 0.5) on http://guide.openrndr.org/#/Tutorial_DrawingComplexShapes as it is much faster
+
 import org.jfugue.pattern.Pattern
 import org.openrndr.*
 import org.openrndr.color.ColorRGBa
@@ -20,10 +21,46 @@ import org.openrndr.shape.Color
 val size   = 1100
 val margin =  100
 
+val nElemMax = 200
 val semicircleSteps = 20
+val fixScale     = false
+val drawNoteAtXY = true
 
-val fixScale = false
 val player = Player()
+
+fun manualScale(n: Int): Double {
+//    val scaleTarget =
+//            when {
+//                n <=  14 ->  20.930232558139537
+//                n <=  29 ->  11.39240506329114
+//                n <=  62 ->   5.732484076433121
+//                n <=  97 ->   3.3962264150943398
+//                n <= 110 ->   2.37467018469657
+//                n <= 168 ->   1.8181818181818181
+//                n <= 185 ->   1.3996889580093312
+//                else ->       1.0804321728691477
+//            }
+    val scaleTarget =
+            when {
+                n <=  16 ->  20.930232558139537
+                n <=  31 ->  11.39240506329114
+                n <=  64 ->   5.732484076433121
+                n <=  99 ->   3.3962264150943398
+                n <= 112 ->   2.37467018469657
+                n <= 170 ->   1.8181818181818181
+                n <= 187 ->   1.3996889580093312
+                else ->       1.0804321728691477
+            }
+//    nElem: 14, maxVal: 43, scale: 35.840503477731005, scaleTarget 20.930232558139537
+//    nElem: 29, maxVal: 79, scale: 14.141056432493597, scaleTarget 11.39240506329114
+//    nElem: 62, maxVal: 157, scale: 7.786624203821682, scaleTarget 5.732484076433121
+//    nElem: 97, maxVal: 265, scale: 3.919811320754768, scaleTarget 3.3962264150943398
+//    nElem: 110, maxVal: 379, scale: 2.429564435687911, scaleTarget 2.37467018469657
+//    nElem: 168, maxVal: 495, scale: 1.8181818181818201, scaleTarget 1.8181818181818181
+//    nElem: 185, maxVal: 643, scale: 1.4143292563796677, scaleTarget 1.3996889580093312
+//    nElem: 200, maxVal: 833, scale: 1.0804321732482505, scaleTarget 1.0804321728691477
+    return scaleTarget
+}
 
 fun recaman(nmax: Int): MutableList<Int> {
     var list = mutableListOf<Int>()
@@ -40,12 +77,11 @@ fun recaman(nmax: Int): MutableList<Int> {
 }
 
 class Recaman: Program() {
-    val nElemMax = 100
-    var scale = 69.0
+    var scale = manualScale(0)
     lateinit var reclist : MutableList<Int>
 
-    var nElem = 2
-    var t     = 0
+    var nElem = 0
+    var t     = semicircleSteps + 1
 
     override fun setup() {
 //        super.backgroundColor = null
@@ -53,19 +89,36 @@ class Recaman: Program() {
         reclist = recaman(nElemMax)
         println("reclist: $reclist")
 //        drawer.background(ColorRGBa.WHITE)
+//        Thread.sleep(200)
     }
 
     override fun draw() {
         super.draw()
 
+        drawer.pushTransforms()
+        drawer.translate(margin.toDouble(), size - margin.toDouble())
+        drawer.scale(1.0, -1.0)
+
+        drawer.background(ColorRGBa.WHITE)
+        drawer.fill   = ColorRGBa.RED
+        drawer.stroke = ColorRGBa.RED
+
+        // TODO: note at 0 misses now ...
+
         // Progress through nElem and t
         if (t < semicircleSteps-1) {
+//            if (t == semicircleSteps - 3) {
+//                val note = 20 + reclist[nElem] % 88
+//                println("nElem: $nElem Seq value ${reclist[nElem]} - going to play $note ...")
+//                Player().delayPlay(0, note.toString())
+//            }
             t += 1
         } else {
             if (nElem < nElemMax) nElem += 1
-            val note = 20 + reclist[nElem-1] % 88  // -1 as it is before the drawing
-            println("nElem: $nElem Seq value ${reclist[nElem-1]} - going to play $note ...")
+            val note = 20 + reclist[nElem-1] % 88
+//            println("nElem: $nElem Seq value ${reclist[nElem-1]} - going to play $note ...")
             Player().delayPlay(0, note.toString())
+//            println("nElem: $nElem Seq value ${reclist[nElem-1]} - going to play $note ...")
             t = 0
         }
 
@@ -74,35 +127,15 @@ class Recaman: Program() {
             scale = (size - 2 * margin) / maxVal.toDouble()
 //            println("nElem: $nElem, maxVal: $maxVal, scale: $scale")
         } else {
-            // TODO: still requires correct scaling - not using the real size currently somehow ...
-            // TODO: ideally the scaling should also change smoothly
-            // TODO: best might be some selected manual scale values ...
             val nElemPlan = Math.min(nElem + 5, nElemMax)
             val maxVal = reclist.take(nElemPlan).max() ?: 1
-            val scaleTarget = (size - 2 * margin) / maxVal.toDouble()
-            scale = scaleTarget - (scaleTarget-scale) * 0.95
-//            println("nElem: $nElem, maxVal: $maxVal, scale: $scale, scaleTarget $scaleTarget")
+//            val scaleTarget = (size - 2 * margin) / maxVal.toDouble()
+            val scaleTarget = manualScale(nElem)
+            // TODO: use easing function?
+            scale = scaleTarget - (scaleTarget-scale) * 0.97
+
+//            if (t == 0) println("t: $t, nElem: $nElem, maxVal: $maxVal, scale: $scale, scaleTarget $scaleTarget")
         }
-
-//        drawer.background(ColorRGBa.WHITE)
-//        drawer.pushStyle()
-//        drawer.stroke = ColorRGBa.GREEN
-//        drawer.contour( Circle(Vector2(100.0, 100.0), 100.0).contour.sub(0.375, 0.875))
-//        drawer.stroke = ColorRGBa.BLUE
-//        drawer.contour( Circle(Vector2(102.0, 102.0), 100.0).contour.sub(0.0, 0.375))
-//        drawer.contour( Circle(Vector2(102.0, 102.0), 100.0).contour.sub(0.875, 1.0))
-//        drawer.popStyle()
-
-        drawer.pushTransforms()
-        drawer.translate(margin.toDouble(), size - margin.toDouble())
-        drawer.scale(0.99, -1.0)
-//        if (nElem > 10) {
-//            drawer.scale(0.5, -0.5)
-//        }
-
-        drawer.background(ColorRGBa.WHITE)
-        drawer.fill = null
-        drawer.stroke = ColorRGBa.RED
 
 //        println("nElem $nElem, t $t")
         for (i in 0..nElem - 1) {
@@ -111,6 +144,7 @@ class Recaman: Program() {
             val r = abs(reclist[i] - reclist[i + 1]) / 2.0
             val reverse = reclist[i] > reclist[i+1]
             val upDown = i%2 == 1
+
 //            println("$i, c: $c, r $r")
             if (i < nElem -1) {
                 val sc = SemiCircle(Vector2(c * scale, c * scale), r * scale * Math.sqrt(2.0), 45.0, -135.0, semicircleSteps, semicircleSteps, reverse, upDown)
@@ -118,41 +152,38 @@ class Recaman: Program() {
             } else { // last semicircle: draw partially
                 val sc = SemiCircle(Vector2(c * scale, c * scale), r * scale * Math.sqrt(2.0), 45.0, -135.0, t, semicircleSteps,  reverse, upDown)
                 sc.draw(drawer)
+
+                // Draw note event at xy-axis
+                if (drawNoteAtXY) {
+                    drawer.pushStyle()
+                    drawer.stroke = null
+                    // TODO: grow a bit in beginning?
+                    // TODO: wobble with frequency?
+                    // TODO: use animation instead?
+                    val weight = 1 - t / semicircleSteps.toDouble()
+                    drawer.fill = ColorRGBa(1.0, 0.0, 0.0, weight)
+                    drawer.circle(Vector2(reclist[i] * scale, reclist[i] * scale), 10.0 * weight)
+                    drawer.popStyle()
+                }
             }
         }
 
         drawer.popTransforms()
-//        Thread.sleep(50)
+//        Thread.sleep(200)
+    }
+}
+
+
+fun ease(t: Double, g1: Double, g2: Double): Double {
+    if (t < 0.5) {
+        return 0.5 * Math.pow(2 * t, g1)
+    } else {
+        return 1 - 0.5 * Math.pow(2 * (1 - t), g2)
     }
 }
 
 fun main(args: Array<String>) {
 
-    // Test JFugue
-
-//    player.play("C D E F G A B")
-//    player.play("V0 I[Piano] Eq Ch. | Eq Ch. | Dq Eq Dq Cq   V1 I[Flute] Rw | Rw | GmajQQQ CmajQ");
-//    val p1 = Pattern("V0 I[Piano] Eq Ch. | Eq Ch. | Dq Eq Dq Cq")
-//    val p2 = Pattern("V1 I[Flute] Rw     | Rw     | GmajQQQ  CmajQ")
-//    player.play(p1, p2)
-//    player.play("1")
-
-//    // Code using midi
-//    val midiSynth = MidiSystem.getSynthesizer()
-//    midiSynth.open()
-//
-//    midiSynth.loadAllInstruments(midiSynth.defaultSoundbank)
-//    val instr = midiSynth.defaultSoundbank.instruments
-//    val mChannels = midiSynth.channels
-//    mChannels[0].programChange(14)  // list of instruments eg https://oeis.org/play?seq=A005132 (with 1 offset)
-//    mChannels[0].noteOn(64, 100)//On channel 0, play note number 60 with velocity 100
-//    try {
-//        Thread.sleep(1000) // wait time in milliseconds to control duration
-//    } catch (e: InterruptedException) {
-//    }
-//    mChannels[0].noteOff(64)//turn of the note
-
-//    exitProcess(0)
     application(Recaman(),
             configuration {
                 width  = size
