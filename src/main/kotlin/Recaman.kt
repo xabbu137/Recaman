@@ -1,6 +1,7 @@
 // Visualisation of the Recaman Series https://oeis.org/A005132
 // TODO: would be cool to have sound with that ... true piano sounds that is :-)
-
+// TODO: add animated dots when playing note / crossing 45deg line
+// TODO: check out drawer.contour( Circle(Vector2(100.0, 100.0), 100.0).contour.sub(0.0, 0.5) on http://guide.openrndr.org/#/Tutorial_DrawingComplexShapes
 import org.jfugue.pattern.Pattern
 import org.openrndr.*
 import org.openrndr.color.ColorRGBa
@@ -12,6 +13,8 @@ import javax.sound.midi.MidiSystem
 import javax.sound.midi.Synthesizer
 import kotlin.system.exitProcess
 import org.jfugue.player.Player
+import org.openrndr.shape.Circle
+import org.openrndr.shape.Color
 
 
 val size   = 1100
@@ -37,7 +40,7 @@ fun recaman(nmax: Int): MutableList<Int> {
 }
 
 class Recaman: Program() {
-    val nElemMax = 200
+    val nElemMax = 100
     var scale = 69.0
     lateinit var reclist : MutableList<Int>
 
@@ -61,7 +64,7 @@ class Recaman: Program() {
         } else {
             if (nElem < nElemMax) nElem += 1
             val note = 20 + reclist[nElem-1] % 88  // -1 as it is before the drawing
-            println("Seq value ${reclist[nElem-1]} - going to play $note ...")
+            println("nElem: $nElem Seq value ${reclist[nElem-1]} - going to play $note ...")
             Player().delayPlay(0, note.toString())
             t = 0
         }
@@ -81,6 +84,15 @@ class Recaman: Program() {
 //            println("nElem: $nElem, maxVal: $maxVal, scale: $scale, scaleTarget $scaleTarget")
         }
 
+//        drawer.background(ColorRGBa.WHITE)
+//        drawer.pushStyle()
+//        drawer.stroke = ColorRGBa.GREEN
+//        drawer.contour( Circle(Vector2(100.0, 100.0), 100.0).contour.sub(0.375, 0.875))
+//        drawer.stroke = ColorRGBa.BLUE
+//        drawer.contour( Circle(Vector2(102.0, 102.0), 100.0).contour.sub(0.0, 0.375))
+//        drawer.contour( Circle(Vector2(102.0, 102.0), 100.0).contour.sub(0.875, 1.0))
+//        drawer.popStyle()
+
         drawer.pushTransforms()
         drawer.translate(margin.toDouble(), size - margin.toDouble())
         drawer.scale(0.99, -1.0)
@@ -97,24 +109,15 @@ class Recaman: Program() {
 //            val i = nElem-1
             val c = (reclist[i] + reclist[i + 1]) / 2.0
             val r = abs(reclist[i] - reclist[i + 1]) / 2.0
-            val reverse = reclist[i] < reclist[i+1]
+            val reverse = reclist[i] > reclist[i+1]
+            val upDown = i%2 == 1
 //            println("$i, c: $c, r $r")
-            if (i % 2 == 1) {
-                if (i < nElem -1) {
-                    val sc = SemiCircle(Vector2(c * scale, c * scale), r * scale * Math.sqrt(2.0), 45.0, -135.0, semicircleSteps, semicircleSteps, reverse)
-                    sc.draw(drawer)
-                } else { // last semicircle: draw partially
-                    val sc = SemiCircle(Vector2(c * scale, c * scale), r * scale * Math.sqrt(2.0), 45.0, -135.0, t, semicircleSteps,  reverse)
-                    sc.draw(drawer)
-                }
-            } else {
-                if (i < nElem -1) {
-                    val sc = SemiCircle(Vector2(c * scale, c * scale), r * scale * Math.sqrt(2.0), 45.0, 225.0, semicircleSteps, semicircleSteps, reverse)
-                    sc.draw(drawer)
-                } else { // last semicircle: draw partially
-                    val sc = SemiCircle(Vector2(c * scale, c * scale), r * scale * Math.sqrt(2.0), 45.0, 225.0, t, semicircleSteps, reverse)
-                    sc.draw(drawer)
-                }
+            if (i < nElem -1) {
+                val sc = SemiCircle(Vector2(c * scale, c * scale), r * scale * Math.sqrt(2.0), 45.0, -135.0, semicircleSteps, semicircleSteps, reverse, upDown)
+                sc.draw(drawer)
+            } else { // last semicircle: draw partially
+                val sc = SemiCircle(Vector2(c * scale, c * scale), r * scale * Math.sqrt(2.0), 45.0, -135.0, t, semicircleSteps,  reverse, upDown)
+                sc.draw(drawer)
             }
         }
 
