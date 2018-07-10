@@ -119,7 +119,7 @@ class Recaman: Program() {
             t += 1
         } else {
             if (nElem < nElemMax) nElem += 1
-            val note = 20 + reclist[nElem-1] % 88
+            val note = val2note(reclist[nElem-1])
             Player().delayPlay(0, note.toString())
             println("nElem: $nElem Seq value ${reclist[nElem-1]} - going to play $note ...")
             t = 0
@@ -174,12 +174,9 @@ class Recaman: Program() {
                 if (drawNoteAtXY) {
                     drawer.pushStyle()
                     drawer.stroke = null
-                    // TODO: grow a bit in beginning?
-                    // TODO: wobble with frequency?
-                    // TODO: use animation instead?
-                    val weight = weight(t / semicircleSteps.toDouble())
-                    drawer.fill = ColorRGBa(1.0, 0.0, 0.0, weight)
-                    drawer.circle(Vector2(reclist[i] * scale, reclist[i] * scale), 10.0 * weight)
+                    val (dx, dy, w) = dotParams(t, semicircleSteps, reclist[i], scale)
+                    drawer.fill = ColorRGBa(1.0, 0.0, 0.0, w)
+                    drawer.circle(Vector2(dx, dy), 10.0 * w)
                     drawer.popStyle()
                 }
             }
@@ -190,8 +187,19 @@ class Recaman: Program() {
     }
 }
 
-fun weight(t: Double): Double {
-    return 1.0 - t
+fun dotParams(t: Int, semicircleSteps: Int, rli: Int, scale: Double) : Triple<Double, Double, Double> {
+    // TODO: grow a bit in beginning?
+    // TODO: wobble with frequency? in size? or in place (perp to 45deg axis)
+    val note = val2note(rli)
+    val dx = rli * scale
+    val dy = rli * scale
+    val w = 1-t/semicircleSteps.toDouble()
+    var triple = Triple<Double, Double, Double>(dx, dy, w)
+    return triple
+}
+
+fun val2note(rli: Int): Int {
+    return 20 + rli % 88
 }
 
 fun ease(t: Double, g1: Double, g2: Double): Double {
