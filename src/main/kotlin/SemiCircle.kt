@@ -18,10 +18,6 @@ class SemiCircle(val center: Vector2, val radius: Double, val startAngle: Double
 //        val end = max(this.startAngle, this.endAngle)
         var start: Double
         var end: Double
-//        if (reverse) {
-//            start = this.endAngle
-//            end = this.startAngle
-//        } else {
             start = this.startAngle
             end = this.endAngle
 //        }
@@ -38,21 +34,6 @@ class SemiCircle(val center: Vector2, val radius: Double, val startAngle: Double
         }
         val scCont = Circle(Vector2(0.0, 0.0), radius).contour.sub(0.0, 0.5 * t / nSteps)
         drawer.contour(scCont)
-
-//        // Try with a moving note dot ... not so nice somehow
-//        // debugging/understanding
-//        println(t)
-//        val startpoint1 = scCont.segments[0].start
-//        val endpoint1 = scCont.segments[0].end
-////        drawer.circle(startpoint1,  4.0)
-//        val r = Math.max(15.0 * (1 - t*2.0/nSteps.toDouble()), 0.0)
-//        drawer.circle(endpoint1,    r)
-////        if (scCont.segments.size > 1) {
-////            val startpoint2 = scCont.segments[1].start
-////            val endpoint2 = scCont.segments[1].end
-////            drawer.circle(startpoint2, 12.0)
-////            drawer.circle(endpoint2, 16.0)
-////        }
 
 //      This is much slower!!!
 //        for (i in 0..t-1) {

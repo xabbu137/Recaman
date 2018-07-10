@@ -1,7 +1,13 @@
 // Visualisation of the Recaman Series https://oeis.org/A005132
-// TODO: add animated dots when playing note / crossing 45deg line
+//
 // play piano note for new values
 // use drawer.contour( Circle(Vector2(100.0, 100.0), 100.0).contour.sub(0.0, 0.5) on http://guide.openrndr.org/#/Tutorial_DrawingComplexShapes as it is much faster
+
+// TODO things to show
+// - variation 0 & 3 as main movies
+// - variation 0 images with different length, eg. 51, 98, 200
+// - explain series with link, aurelisation/graphs done, recreate here animated ...
+// - mention openrndr, jfugue, FluidR3_GM.sf2
 
 import org.jfugue.pattern.Pattern
 import org.openrndr.*
@@ -18,17 +24,23 @@ import org.openrndr.draw.Drawer
 import org.openrndr.shape.Circle
 import org.openrndr.shape.Color
 import org.openrndr.shape.LineSegment
+import kotlin.math.round
 
 
 val size   = 1100
 val margin =  100
 
-val nElemMax        = 200
+val nElemMax        = 140
 val semicircleSteps = 20
 val fixScale        = false
 val scaleSteps      = 80
-val drawNoteAtXY    = true
-val vibratingAxis   = false
+
+const val variation = 3
+
+var drawNoteAtXY1   = false     // This is a fixed point just changing size
+var drawNoteAtXY2   = false     // This is a bouncing point
+var vibratingAxis1  = false     // This is like plucked string
+var vibratingAxis2  = false     // This is like piano keys
 
 val player = Player()
 
@@ -97,6 +109,34 @@ class Recaman: Program() {
         println("reclist: $reclist")
 //        drawer.background(ColorRGBa.WHITE)
 //        Thread.sleep(200)
+
+        when (variation) {
+            0 -> {
+                drawNoteAtXY1 = false
+                drawNoteAtXY2 = false
+                vibratingAxis1 = false
+                vibratingAxis2 = false
+            }
+            1 -> {
+                drawNoteAtXY1 = true
+                drawNoteAtXY2 = false
+                vibratingAxis1 = false
+                vibratingAxis2 = false
+            }
+            2 -> {
+                drawNoteAtXY1 = false
+                drawNoteAtXY2 = true
+                vibratingAxis1 = true
+                vibratingAxis2 = false
+            }
+            3 -> {
+                drawNoteAtXY1 = false
+                drawNoteAtXY2 = true
+                vibratingAxis1 = false
+                vibratingAxis2 = true
+            }
+            else -> {}
+        }
     }
 
     override fun draw() {
@@ -113,19 +153,15 @@ class Recaman: Program() {
 
         // Progress through nElem and t
         if (t < semicircleSteps-1) {
-            // Doing that her would miss note at 0 ...
-//            if (t == semicircleSteps - 3) {
-//                val note = 20 + reclist[nElem] % 88
-//                println("nElem: $nElem Seq value ${reclist[nElem]} - going to play $note ...")
-//                Player().delayPlay(0, note.toString())
-//            }
             t += 1
         } else {
-            if (nElem < nElemMax) nElem += 1
-            val note = val2note(reclist[nElem-1])
-            Player().delayPlay(0, note.toString())
-            println("nElem: $nElem Seq value ${reclist[nElem-1]} - going to play $note ...")
-            t = 0
+            if (nElem <= nElemMax) {
+                nElem += 1
+                val note = val2note(reclist[nElem-1])
+                Player().delayPlay(0, note.toString())
+                println("nElem: $nElem Seq value ${reclist[nElem-1]} - going to play $note ...")
+                t = 0
+            }
         }
 
         if (fixScale) {
@@ -145,7 +181,7 @@ class Recaman: Program() {
                     scaleStepCount = 0
                 }
                 scaleStepCount += 1
-                scale = scaleTargetPrev + (scaleTarget - scaleTargetPrev) * ease(scaleStepCount/scaleSteps.toDouble(), 4.0, 4.0)
+                scale = scaleTargetPrev + (scaleTarget - scaleTargetPrev) * ease(scaleStepCount/scaleSteps.toDouble(), 2.0, 2.0)
                 if (scaleStepCount == scaleSteps) {
                     // end of scaling
                     scaleStepCount = -1
@@ -159,10 +195,10 @@ class Recaman: Program() {
 
 //        println("nElem $nElem, t $t")
         for (i in 0..nElem - 1) {
-//            val i = nElem-1
-            val c = (reclist[i] + reclist[i + 1]) / 2.0
-            val r = abs(reclist[i] - reclist[i + 1]) / 2.0
-            val reverse = reclist[i] > reclist[i+1]
+
+            val c = if (i < nElemMax) (reclist[i] + reclist[i + 1]) / 2.0 else 0.0
+            val r = if (i < nElemMax) abs(reclist[i] - reclist[i + 1]) / 2.0 else 0.0
+            val reverse = if (i < nElemMax) reclist[i] > reclist[i+1] else false
             val upDown = i%2 == 1
 
 //            println("$i, c: $c, r $r")
@@ -174,52 +210,102 @@ class Recaman: Program() {
                 sc.draw(drawer)
 
                 // Draw note event at xy-axis
-                if (drawNoteAtXY) {
+                if (drawNoteAtXY1) {
                     drawer.pushStyle()
                     drawer.stroke = null
-                    val (dx, dy, w) = dotParams(t, semicircleSteps, reclist[i], scale)
-//                    drawer.fill = ColorRGBa(1.0, 0.0, 0.0, 1.0)
-//                    drawer.fill = ColorRGBa(0.0, 0.0, 0.0, 0.3)
-                    drawer.stroke = ColorRGBa(0.0, 0.0, 0.0, 0.3)
-//                    drawer.stroke = ColorRGBa.BLACK
-//                    drawer.circle(Vector2(dx, dy), w)
-                    drawer.lineSegment(dx -scale/2, dy-scale/2, dx+scale/2, dy+scale/2)
+                    val (dx, dy, w) = dotParamsA(t, semicircleSteps, reclist[i], scale)
+                    drawer.fill = ColorRGBa(1.0, 0.0, 0.0, 1.0)
+                    drawer.circle(Vector2(dx, dy), w)
+                    drawer.popStyle()
+                }
+                // Draw note event at xy-axis
+                if (drawNoteAtXY2) {
+                    drawer.pushStyle()
+                    drawer.stroke = null
+                    val (dx, dy, w) = dotParamsB(t, semicircleSteps, reclist[i], scale)
+                    drawer.fill = ColorRGBa(1.0, 0.0, 0.0, 1.0)
+                    drawer.circle(Vector2(dx, dy), w)
                     drawer.popStyle()
                 }
 
                 // Draw axis somehow
-                if (vibratingAxis) {
-                    vibratingLine(drawer, t, semicircleSteps, reclist[i-1], scale)
+                if (vibratingAxis1) {
+                    vibratingLine1(drawer, t, semicircleSteps, reclist[i], scale)
                 }
-//                drawer.pushStyle()
-//                drawer.stroke = ColorRGBa(0.0, 0.0, 0.0, 0.1)
-////                drawer.lineSegment(0.0, 0.0, 1000.0, 1000.0)
-//                drawer.popStyle()
+                if (vibratingAxis2) {
+//                    val currRLmax = reclist.take(i).max() ?: 1      // only draw up to current max occurred value
+                    val currRLmax = round( (size - 2*margin) / scale).toInt()
+                    vibratingLine2(drawer, t, semicircleSteps, reclist[i], scale, currRLmax)
+                }
             }
         }
 
         drawer.popTransforms()
-        Thread.sleep(20)
+//        Thread.sleep(20)
     }
 }
 
-fun dotParams(t: Int, semicircleSteps: Int, rli: Int, scale: Double) : Triple<Double, Double, Double> {
-    // TODO: grow a bit in beginning?
-    // TODO: wobble with frequency? in size? or in place (perp to 45deg axis)
+fun dotParamsA(t: Int, semicircleSteps: Int, rli: Int, scale: Double) : Triple<Double, Double, Double> {
+    // coordinates fixed
     val note = val2note(rli)
-    val dx = rli * scale - 3* Math.cos(t/3.0*Math.PI)* (1-Math.sqrt(t/semicircleSteps.toDouble()))
-    val dy = rli * scale + 3* Math.cos(t/3.0*Math.PI)* (1-Math.sqrt(t/semicircleSteps.toDouble()))
-    val w = 10.0 * (1-Math.sqrt(t/semicircleSteps.toDouble())) //* (1 + 0.2* Math.sin(t/2.5*Math.PI))
+    val dx = rli * scale
+    val dy = rli * scale
+    val w = Math.max(scale/2, 3.0)  * (1-Math.pow(t/semicircleSteps.toDouble(), 2.0)) //* (1 + 0.2* Math.sin(t/2.5*Math.PI))
     var triple = Triple<Double, Double, Double>(dx, dy, w)
     return triple
 }
 
-fun vibratingLine(drawer: Drawer, t: Int, semicircleSteps: Int, rli: Int, scale: Double) {
+fun dotParamsB(t: Int, semicircleSteps: Int, rli: Int, scale: Double) : Triple<Double, Double, Double> {
+    // ccordinates move
+    val note = val2note(rli)
+    val dx = rli * scale - 10* Math.cos(t/3.0*Math.PI)* (1-Math.sqrt(t/semicircleSteps.toDouble()))
+    val dy = rli * scale + 10* Math.cos(t/3.0*Math.PI)* (1-Math.sqrt(t/semicircleSteps.toDouble()))
+    val w = Math.max(scale/2, 5.0)  * (1-Math.sqrt(t/semicircleSteps.toDouble())) //* (1 + 0.2* Math.sin(t/2.5*Math.PI))
+    var triple = Triple<Double, Double, Double>(dx, dy, w)
+    return triple
+}
+
+
+fun dotParams1(t: Int, semicircleSteps: Int, rli: Int, scale: Double) : Triple<Double, Double, Double> {
+    val note = val2note(rli)
+    val dx = rli * scale - Math.max(scale/2, 5.0)* Math.cos(t/3.0*Math.PI)* (1-Math.sqrt(t/semicircleSteps.toDouble()))
+    val dy = rli * scale + Math.max(scale/2, 5.0)* Math.cos(t/3.0*Math.PI)* (1-Math.sqrt(t/semicircleSteps.toDouble()))
+    val w = 0.0
+    var triple = Triple<Double, Double, Double>(dx, dy, w)
+    return triple
+}
+
+fun vibratingLine1(drawer: Drawer, t: Int, semicircleSteps: Int, rli: Int, scale: Double) {
+    val (dx, dy, w) = dotParams1(t, semicircleSteps, rli, scale)
     drawer.pushStyle()
-    val lc = LineSegment(Vector2(200.0,100.0), Vector2(400.0,100.0)).contour
-    lc.segments[0].control.plusElement(Vector2(300.0, 200.0))
-    drawer.stroke = ColorRGBa.BLUE
-    drawer.contour(lc)
+    drawer.stroke = ColorRGBa(0.0, 0.0, 0.0, 0.3)
+    drawer.lineSegment(0.0, 0.0, dx -scale/2, dy-scale/2)
+    drawer.lineSegment(dx -scale/2, dy-scale/2, dx+scale/2, dy+scale/2)
+    drawer.lineSegment(dx+scale/2, dy+scale/2, 1000.0, 1000.0)
+    drawer.popStyle()
+}
+
+
+fun dotParams2(t: Int, semicircleSteps: Int, rli: Int, scale: Double) : Triple<Double, Double, Double> {
+    val note = val2note(rli)
+    val dx = rli * scale - Math.max(scale/2, 5.0)* Math.cos(t/3.0*Math.PI)* (1-Math.sqrt(t/semicircleSteps.toDouble()))
+    val dy = rli * scale + Math.max(scale/2, 5.0)* Math.cos(t/3.0*Math.PI)* (1-Math.sqrt(t/semicircleSteps.toDouble()))
+    val w = 0.0
+    var triple = Triple<Double, Double, Double>(dx, dy, w)
+    return triple
+}
+
+fun vibratingLine2(drawer: Drawer, t: Int, semicircleSteps: Int, rli: Int, scale: Double, currRLmax: Int) {
+    val (dx, dy, w) = dotParams2(t, semicircleSteps, rli, scale)
+    drawer.pushStyle()
+    drawer.stroke = ColorRGBa(0.0, 0.0, 0.0, 0.2)
+    for (i in 0..rli-1) {
+        drawer.lineSegment((i-0.35)*scale, (i-0.35)*scale, (i+0.35)*scale, (i+0.35)*scale)
+    }
+    drawer.lineSegment(dx - 0.35*scale, dy- 0.35*scale, dx+ 0.35*scale, dy+ 0.35*scale)
+    for (i in rli+1..currRLmax) {
+        drawer.lineSegment((i-0.35)*scale, (i-0.35)*scale, (i+0.35)*scale, (i+0.35)*scale)
+    }
     drawer.popStyle()
 }
 
