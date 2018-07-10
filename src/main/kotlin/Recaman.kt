@@ -24,6 +24,7 @@ val margin =  100
 val nElemMax = 200
 val semicircleSteps = 20
 val fixScale     = false
+val scaleSteps   = 80
 val drawNoteAtXY = true
 
 val player = Player()
@@ -44,7 +45,7 @@ fun manualScale(n: Int): Double {
             when {
                 n <=  16 ->  20.930232558139537
                 n <=  31 ->  11.39240506329114
-                n <=  64 ->   5.732484076433121
+                n <=  64 ->   6.732484076433121
                 n <=  99 ->   3.3962264150943398
                 n <= 112 ->   2.37467018469657
                 n <= 170 ->   1.8181818181818181
@@ -77,7 +78,10 @@ fun recaman(nmax: Int): MutableList<Int> {
 }
 
 class Recaman: Program() {
-    var scale = manualScale(0)
+    var scale   = manualScale(0)
+    var scaleTarget     = scale
+    var scaleTargetPrev = scale
+    var scaleStepCount = -1
     lateinit var reclist : MutableList<Int>
 
     var nElem = 0
@@ -103,10 +107,10 @@ class Recaman: Program() {
         drawer.fill   = ColorRGBa.RED
         drawer.stroke = ColorRGBa.RED
 
-        // TODO: note at 0 misses now ...
 
         // Progress through nElem and t
         if (t < semicircleSteps-1) {
+            // Doing that her would miss note at 0 ...
 //            if (t == semicircleSteps - 3) {
 //                val note = 20 + reclist[nElem] % 88
 //                println("nElem: $nElem Seq value ${reclist[nElem]} - going to play $note ...")
@@ -116,9 +120,8 @@ class Recaman: Program() {
         } else {
             if (nElem < nElemMax) nElem += 1
             val note = 20 + reclist[nElem-1] % 88
-//            println("nElem: $nElem Seq value ${reclist[nElem-1]} - going to play $note ...")
             Player().delayPlay(0, note.toString())
-//            println("nElem: $nElem Seq value ${reclist[nElem-1]} - going to play $note ...")
+            println("nElem: $nElem Seq value ${reclist[nElem-1]} - going to play $note ...")
             t = 0
         }
 
@@ -130,9 +133,23 @@ class Recaman: Program() {
             val nElemPlan = Math.min(nElem + 5, nElemMax)
             val maxVal = reclist.take(nElemPlan).max() ?: 1
 //            val scaleTarget = (size - 2 * margin) / maxVal.toDouble()
-            val scaleTarget = manualScale(nElem)
-            // TODO: use easing function?
-            scale = scaleTarget - (scaleTarget-scale) * 0.97
+            scaleTarget = manualScale(nElem)
+            // Scale adjustment via easing function
+            if (scaleTarget != scaleTargetPrev) {
+                // Ease the scale ...
+                if (scaleStepCount < 0) {
+                    // currently not scaling ...
+                    scaleStepCount = 0
+                }
+                scaleStepCount += 1
+                scale = scaleTargetPrev + (scaleTarget - scaleTargetPrev) * ease(scaleStepCount/scaleSteps.toDouble(), 4.0, 4.0)
+                if (scaleStepCount == scaleSteps) {
+                    // end of scaling
+                    scaleStepCount = -1
+                    scaleTargetPrev = scaleTarget
+                }
+            }
+//            scale = scaleTarget - (scaleTarget-scale) * 0.97
 
 //            if (t == 0) println("t: $t, nElem: $nElem, maxVal: $maxVal, scale: $scale, scaleTarget $scaleTarget")
         }
@@ -160,7 +177,7 @@ class Recaman: Program() {
                     // TODO: grow a bit in beginning?
                     // TODO: wobble with frequency?
                     // TODO: use animation instead?
-                    val weight = 1 - t / semicircleSteps.toDouble()
+                    val weight = weight(t / semicircleSteps.toDouble())
                     drawer.fill = ColorRGBa(1.0, 0.0, 0.0, weight)
                     drawer.circle(Vector2(reclist[i] * scale, reclist[i] * scale), 10.0 * weight)
                     drawer.popStyle()
@@ -173,6 +190,9 @@ class Recaman: Program() {
     }
 }
 
+fun weight(t: Double): Double {
+    return 1.0 - t
+}
 
 fun ease(t: Double, g1: Double, g2: Double): Double {
     if (t < 0.5) {
