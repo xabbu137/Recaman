@@ -14,18 +14,21 @@ import javax.sound.midi.MidiSystem
 import javax.sound.midi.Synthesizer
 import kotlin.system.exitProcess
 import org.jfugue.player.Player
+import org.openrndr.draw.Drawer
 import org.openrndr.shape.Circle
 import org.openrndr.shape.Color
+import org.openrndr.shape.LineSegment
 
 
 val size   = 1100
 val margin =  100
 
-val nElemMax = 200
+val nElemMax        = 200
 val semicircleSteps = 20
-val fixScale     = false
-val scaleSteps   = 80
-val drawNoteAtXY = true
+val fixScale        = false
+val scaleSteps      = 80
+val drawNoteAtXY    = true
+val vibratingAxis   = false
 
 val player = Player()
 
@@ -175,15 +178,28 @@ class Recaman: Program() {
                     drawer.pushStyle()
                     drawer.stroke = null
                     val (dx, dy, w) = dotParams(t, semicircleSteps, reclist[i], scale)
-                    drawer.fill = ColorRGBa(1.0, 0.0, 0.0, w)
-                    drawer.circle(Vector2(dx, dy), 10.0 * w)
+//                    drawer.fill = ColorRGBa(1.0, 0.0, 0.0, 1.0)
+//                    drawer.fill = ColorRGBa(0.0, 0.0, 0.0, 0.3)
+                    drawer.stroke = ColorRGBa(0.0, 0.0, 0.0, 0.3)
+//                    drawer.stroke = ColorRGBa.BLACK
+//                    drawer.circle(Vector2(dx, dy), w)
+                    drawer.lineSegment(dx -scale/2, dy-scale/2, dx+scale/2, dy+scale/2)
                     drawer.popStyle()
                 }
+
+                // Draw axis somehow
+                if (vibratingAxis) {
+                    vibratingLine(drawer, t, semicircleSteps, reclist[i-1], scale)
+                }
+//                drawer.pushStyle()
+//                drawer.stroke = ColorRGBa(0.0, 0.0, 0.0, 0.1)
+////                drawer.lineSegment(0.0, 0.0, 1000.0, 1000.0)
+//                drawer.popStyle()
             }
         }
 
         drawer.popTransforms()
-//        Thread.sleep(200)
+        Thread.sleep(20)
     }
 }
 
@@ -191,14 +207,24 @@ fun dotParams(t: Int, semicircleSteps: Int, rli: Int, scale: Double) : Triple<Do
     // TODO: grow a bit in beginning?
     // TODO: wobble with frequency? in size? or in place (perp to 45deg axis)
     val note = val2note(rli)
-    val dx = rli * scale
-    val dy = rli * scale
-    val w = 1-t/semicircleSteps.toDouble()
+    val dx = rli * scale - 3* Math.cos(t/3.0*Math.PI)* (1-Math.sqrt(t/semicircleSteps.toDouble()))
+    val dy = rli * scale + 3* Math.cos(t/3.0*Math.PI)* (1-Math.sqrt(t/semicircleSteps.toDouble()))
+    val w = 10.0 * (1-Math.sqrt(t/semicircleSteps.toDouble())) //* (1 + 0.2* Math.sin(t/2.5*Math.PI))
     var triple = Triple<Double, Double, Double>(dx, dy, w)
     return triple
 }
 
+fun vibratingLine(drawer: Drawer, t: Int, semicircleSteps: Int, rli: Int, scale: Double) {
+    drawer.pushStyle()
+    val lc = LineSegment(Vector2(200.0,100.0), Vector2(400.0,100.0)).contour
+    lc.segments[0].control.plusElement(Vector2(300.0, 200.0))
+    drawer.stroke = ColorRGBa.BLUE
+    drawer.contour(lc)
+    drawer.popStyle()
+}
+
 fun val2note(rli: Int): Int {
+    // translate from integers to possible piano notes
     return 20 + rli % 88
 }
 
