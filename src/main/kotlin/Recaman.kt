@@ -5,7 +5,7 @@
 
 // TODO things to show
 // - variation 0 & 3 as main movies
-// - variation 0 images with different length, eg. 51, 98, 200
+// - variation 0 images with different length, eg. 51, 98, 169, 200
 // - explain series with link, aurelisation/graphs done, recreate here animated ...
 // - mention openrndr, jfugue, FluidR3_GM.sf2
 
@@ -25,12 +25,13 @@ import org.openrndr.shape.Circle
 import org.openrndr.shape.Color
 import org.openrndr.shape.LineSegment
 import kotlin.math.round
+//import org.openrndr.ffmpeg.ScreenRecorder
 
 
-val size   = 1100
+val size   = 1000
 val margin =  100
 
-val nElemMax        = 140
+val nElemMax        = 169
 val semicircleSteps = 20
 val fixScale        = false
 val scaleSteps      = 80
@@ -41,6 +42,7 @@ var drawNoteAtXY1   = false     // This is a fixed point just changing size
 var drawNoteAtXY2   = false     // This is a bouncing point
 var vibratingAxis1  = false     // This is like plucked string
 var vibratingAxis2  = false     // This is like piano keys
+var runAnimation    = false
 
 val player = Player()
 
@@ -104,6 +106,7 @@ class Recaman: Program() {
 
     override fun setup() {
 //        super.backgroundColor = null
+        setupKeyEvents()
 //        extend(ScreenRecorder())
         reclist = recaman(nElemMax)
         println("reclist: $reclist")
@@ -140,6 +143,7 @@ class Recaman: Program() {
     }
 
     override fun draw() {
+
         super.draw()
 
         drawer.pushTransforms()
@@ -147,9 +151,10 @@ class Recaman: Program() {
         drawer.scale(1.0, -1.0)
 
         drawer.background(ColorRGBa.WHITE)
-        drawer.fill   = ColorRGBa.RED
-        drawer.stroke = ColorRGBa.RED
+        drawer.fill   = ColorRGBa(0.84, 0.07, 0.13, 1.0)
+        drawer.stroke = ColorRGBa(0.84, 0.07, 0.13, 1.0)
 
+        if (! runAnimation) return
 
         // Progress through nElem and t
         if (t < semicircleSteps-1) {
@@ -172,7 +177,7 @@ class Recaman: Program() {
             val nElemPlan = Math.min(nElem + 5, nElemMax)
             val maxVal = reclist.take(nElemPlan).max() ?: 1
 //            val scaleTarget = (size - 2 * margin) / maxVal.toDouble()
-            scaleTarget = manualScale(nElem)
+            scaleTarget = manualScale(nElem) * 5/6
             // Scale adjustment via easing function
             if (scaleTarget != scaleTargetPrev) {
                 // Ease the scale ...
@@ -242,6 +247,17 @@ class Recaman: Program() {
 
         drawer.popTransforms()
 //        Thread.sleep(20)
+    }
+
+    private fun setupKeyEvents() {
+        println("Interaction: SPACE to stop animation, p to toggle image")
+        keyboard.keyDown.listen {
+            // -- it refers to a KeyEvent instance here
+            if (it.key == 32) {             // SPACE
+                runAnimation = ! runAnimation
+                println("SPACE pressed - runAnimation now $runAnimation")
+            }
+        }
     }
 }
 
