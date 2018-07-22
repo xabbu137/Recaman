@@ -29,9 +29,9 @@ import kotlin.math.round
 
 
 val size   = 1000
-val margin =  100
+val margin =  70
 
-val nElemMax        = 169
+val nElemMax        = 200
 val semicircleSteps = 20
 val fixScale        = false
 val scaleSteps      = 80
